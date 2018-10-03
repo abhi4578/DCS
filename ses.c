@@ -13,11 +13,10 @@
  int proccessId;  
   sem_t mutex;
  int channelDelay[100];  
- int delivBuf[100][100];  
  int delivBufIndex=0;  
  
- struct VP
- {
+ struct VP  // Contains history of communication of particualar instance like message has beeen sent to process 2 with the process sending it having vector clock whose value is the field member         
+ { 
   int clock[100];
  };
 typedef  struct info {
