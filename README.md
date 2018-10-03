@@ -14,9 +14,9 @@ gcc ses.c -lpthread
 - Enter process id of that process(0-n-1)  in the terminal 
 - Enter same set of port numbers for each process to connect in each terminal
 - Eg: If number of processes is 3
-- process 0 port 8050
-- process 1 port 9050 
-- process 2 port 9150
+ - process 0 port 8050
+ - process 1 port 9050 
+ - process 2 port 9150
 - enter the same set of port numbers in each terminal 
 - Enter the message you want to send and the destination process id 
 
