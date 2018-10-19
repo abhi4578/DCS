@@ -1,0 +1,10 @@
+void Die_with_error(char *errorMessage);
+void Enqueue(buffer *rbuffer);
+void Dequeue();
+void *Handle_TCP_client(void *args1);
+void *Recv(void *attribute);
+void Send_SES(buffer *rbuffer,int p);
+void Send_BCMsg(int msg);
+void Intiate_critical();
+void MHS(buffer *rbuffer);
+void Init_channel_delay();
