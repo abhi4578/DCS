@@ -19,7 +19,7 @@ sem_t mutex;
 pthread_mutex_t critical;
 pthread_mutex_t queue_head;
 pthread_mutex_t sbuffer_global;
-pthread_mutex_t rep_count;
+
  
 
 typedef  struct info {
@@ -277,9 +277,9 @@ void MHS(buffer *rbuffer)
     }
     else if( rbuffer->Msg==REP)
     {printf("MHS - msg recieved REP with clock %d\n",rbuffer->pclock);
-      pthread_mutex_lock(&rep_count);
+      
       REP_count++;
-      pthread_mutex_unlock(&rep_count);
+      
     
     
     }
@@ -315,7 +315,7 @@ int main(int argc, const char * argv[])
    pthread_mutex_init(&critical, NULL);
    pthread_mutex_init(&sbuffer_global, NULL);
    pthread_mutex_init(&queue_head, NULL);
-   pthread_mutex_init(&rep_count,NULL);
+   
 
    printf("Enter Total Number Of Processes (< 100):\n");  
    scanf("%d",&totalProcesses);  
