@@ -285,7 +285,7 @@ void MHS(buffer *rbuffer)
 	       else
 	       {
 	       	Enqueue(rbuffer);
-	       	if(rbuffer->pclock < vote.clock && vote.have_inquired==0)
+	       	if(rbuffer->pclock < vote.clock|| && vote.have_inquired==0)
 	       	{ 	rbuffer->Msg=INQUIRE;
 	       		Send_SES(rbuffer,vote.site,vote.pid);
 	       		printf("MHS - msg INQUIRE sent with clock %d\n",rbuffer->pclock);
