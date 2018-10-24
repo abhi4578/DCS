@@ -115,7 +115,7 @@ void Dequeue()
   {
     head=temp->next;
     ////free(temp);
-    printf("Dequeued %d\n",temp->pid);
+    printf("Dequeued process site no. : %d  ,proc no.: %d\n",temp->site,temp->pid);
     pthread_mutex_unlock(&queue_head);
     return ;
   }
@@ -136,7 +136,7 @@ void *Handle_TCP_client(void *args1){
    sleep(rbuffer->del);
    if(ports[rbuffer->site][rbuffer->pid]==-1)
     ports[rbuffer->site][rbuffer->pid]=rbuffer->portn;
-   printf("\nReceived Message From:- (%d), site no: %d, proc no.:%d \n", ports[rbuffer->site][rbuffer->pid], rbuffer->site,rbuffer->pid);
+   //printf("\nReceived Message From:- (%d), site no: %d, proc no.:%d \n", ports[rbuffer->site][rbuffer->pid], rbuffer->site,rbuffer->pid);
    sem_wait(&mutex);
    MHS(rbuffer);
    sem_post(&mutex);
@@ -234,6 +234,7 @@ void Intiate_critical()
  {
 
   // Entry section----------------------
+    printf("entry section-- REQ is sent with clock %d to all process in site %d\n",sbuffer.pclock+1,prime_site);
     Send_BCMsg(REQ);
     
 
@@ -247,114 +248,118 @@ void Intiate_critical()
 
      
   //Critical section------------------
-     pthread_mutex_lock(&critical);
+    // pthread_mutex_lock(&critical);
      
 
      printf("enter critical section\n");
         sleep(3); //critical section
   //-----------------------------------
   //exit critical section--------------
-      	printf("exit critical section\n");
-        printf("MHS - msg sent  REL with clock %d\n",sbuffer.pclock);
+        printf("exit critical section\n");
+        printf("exiting critical section- msg sent  REL with clock %d to all process in site %d\n",sbuffer.pclock+1,prime_site);
         Send_BCMsg(REL);//Send relieve message to all processes
         
-       pthread_mutex_unlock(&critical) ;
+      // pthread_mutex_unlock(&critical) ;
   //-----------------------------------
     }
 
 
 void MHS(buffer *rbuffer)
  { 
-    pthread_mutex_lock(&sbuffer_global);          //if this placed first - posssiblity of deadlock
+    pthread_mutex_lock(&sbuffer_global);          
   sbuffer.pclock=sbuffer.pclock > rbuffer->pclock ? (sbuffer.pclock+1):(rbuffer->pclock + 1);
    pthread_mutex_unlock(&sbuffer_global);
 
    switch(rbuffer->Msg)
    {case REQ:
-    	{
-	       printf("MHS - msg recieved REQ with clock %d\n",rbuffer->pclock);
-	       if(!vote.have_voted)
-	       {vote.clock=rbuffer->pclock;
-	       	vote.pid=rbuffer->pid;
-	       	vote.site=rbuffer->site;
-	       	vote.have_voted=1; 
-	       	rbuffer->Msg=VOTE;
-	       	Send_SES(rbuffer,rbuffer->site,rbuffer->pid);
-	       	printf("MHS - msg VOTE sent with clock %d\n",rbuffer->pclock);
-	       }
-	       else
-	       {
-	       	Enqueue(rbuffer);
-	       	if(rbuffer->pclock < vote.clock|| && vote.have_inquired==0)
-	       	{ 	rbuffer->Msg=INQUIRE;
-	       		Send_SES(rbuffer,vote.site,vote.pid);
-	       		printf("MHS - msg INQUIRE sent with clock %d\n",rbuffer->pclock);
-	       		vote.have_inquired=1;
-	       	}
-	       }
-	      
-	      break;
-    	}
+      {
+         printf("MHS - msg recieved REQ with clock %d from  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[rbuffer->site][rbuffer->pid], rbuffer->site,rbuffer->pid);
+         if(!vote.have_voted)
+         {vote.clock=rbuffer->pclock;
+          vote.pid=rbuffer->pid;
+          vote.site=rbuffer->site;
+          vote.have_voted=1; 
+          rbuffer->Msg=VOTE;
+          Send_SES(rbuffer,rbuffer->site,rbuffer->pid);
+          printf("MHS - msg VOTE sent with clock %d to  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[vote.site][vote.pid], vote.site,vote.pid);
+         }
+         else
+         {
+          Enqueue(rbuffer);
+          if((rbuffer->pclock < vote.clock|| (rbuffer->pclock == vote.clock && rbuffer->pid < vote.pid) )&& vote.have_inquired==0)
+          {   rbuffer->Msg=INQUIRE;
+            Send_SES(rbuffer,vote.site,vote.pid);
+            printf("MHS - msg INQUIRE sent with clock %d to  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[vote.site][vote.pid], vote.site,vote.pid);
+            vote.have_inquired=1;
+          }
+         }
+        
+        break;
+      }
     case  VOTE:
-    		{printf("MHS - msg recieved vote with clock %d\n",rbuffer->pclock);
-    		Yes_count++;
-     		 break;
+        {printf("MHS - msg recieved VOTE with clock %d from  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[rbuffer->site][rbuffer->pid], rbuffer->site,rbuffer->pid);
+        Yes_count++;
+         break;
 
 
-    		}
+        }
     case REL:
-    		{printf("MHS - msg recieved REL with clock %d\n",rbuffer->pclock);
-     	 	 if(head!=NULL)
-     	 	 { 
-     	 	 	vote.clock=head->clock;
-     	 	 	vote.pid=head->pid;
-     	 	 	vote.site=head->site;
-     	 	 	rbuffer->Msg=VOTE;
-     	 	 	Dequeue();
-     	 	 	Send_SES(rbuffer,vote.site,vote.pid);
-     	 	 	printf("MHS - msg VOTE sent with clock %d\n",rbuffer->pclock);
+        {printf("MHS - msg recieved REL with clock %d from  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[rbuffer->site][rbuffer->pid], rbuffer->site,rbuffer->pid);
+         if(head!=NULL)
+         { 
+          vote.clock=head->clock;
+          vote.pid=head->pid;
+          vote.site=head->site;
+          rbuffer->Msg=VOTE;
+          Dequeue();
+          Send_SES(rbuffer,vote.site,vote.pid);
+          printf("MHS - msg VOTE sent with clock %d to  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[vote.site][vote.pid], vote.site,vote.pid);
 
-     	 	 }
-       		
-       		else 
-       		{
-       			vote.have_voted=0;
-       		}
-       		vote.have_inquired=0;
-      	 	break;
+         }
+          
+          else 
+          {
+            vote.have_voted=0;
+          }
+          vote.have_inquired=0;
+          break;
 
-    		}
+        }
 
     case INQUIRE:
-    		{	printf("MHS - msg recieved INQUIRE with clock %d\n",rbuffer->pclock);
-    			pthread_mutex_lock(&critical)  ;
-    			if(Yes_count!=totalProcesses || Yes_count!=0) //rel and inquire simultaneously,use ses
-	    		{	Yes_count--;
-	    			rbuffer->Msg=RELINQUISH;
-    			Send_SES(rbuffer,rbuffer->site,rbuffer->pid);
-    			printf("MHS - msg RELINQUISH sent with clock %d\n",rbuffer->pclock);
-    			}
-    			pthread_mutex_unlock(&critical);
-    			break;
-    		}
+        { printf("MHS - msg recieved INQUIRE with clock %d from  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[rbuffer->site][rbuffer->pid], rbuffer->site,rbuffer->pid);
+         // pthread_mutex_lock(&critical)  ;
+          if(Yes_count!=totalProcesses && Yes_count!=0) //rel and inquire simultaneously,use ses
+          { Yes_count--;
+            rbuffer->Msg=RELINQUISH;
+            int s=rbuffer->site,p=rbuffer->pid;
+          Send_SES(rbuffer,s,p);
+          printf("MHS - msg RELINQUISH sent with clock %d to  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[s][p],s,p);
+          }
+         // pthread_mutex_unlock(&critical);
+          break;
+        }
     case RELINQUISH:
-    		{ printf("MHS - msg recieved RELINQUISH with clock %d\n",rbuffer->pclock);
-    		  rbuffer->pid=vote.pid;
-    		  rbuffer->site=vote.site;
-    		  rbuffer->pclock=vote.clock;
-    		  Enqueue(rbuffer);
-    		  if(vote.pid!=head->pid) //not empty queue before?
-    		 { vote.clock=head->clock;
-     	 	  vote.pid=head->pid;
-     	 	  vote.site=head->site;
-     	 	  rbuffer->Msg=VOTE;
-     	 	  Send_SES(rbuffer,vote.site,vote.pid);
-     	 	 printf("MHS - msg VOTE sent with clock %d\n",rbuffer->pclock);
-     	 	 }
-     	 	  Dequeue();
-     	 	  vote.have_inquired=0;
-     	 	  break;
-    		}
+        { printf("MHS - msg recieved RELINQUISH with clock %d from  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[rbuffer->site][rbuffer->pid], rbuffer->site,rbuffer->pid);
+          rbuffer->pid=vote.pid;
+          rbuffer->site=vote.site;
+          rbuffer->pclock=vote.clock;
+          Enqueue(rbuffer);
+          if(vote.pid!=head->pid) //not empty queue before?
+         { vote.clock=head->clock;
+          vote.pid=head->pid;
+          vote.site=head->site;
+          rbuffer->Msg=VOTE;
+          Send_SES(rbuffer,vote.site,vote.pid);
+          printf("MHS - msg VOTE sent with clock %d to  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[vote.site][vote.pid], vote.site,vote.pid);
+          Dequeue();
+          vote.have_inquired=0;
+          break;
+         }
+          Dequeue();
+          vote.have_inquired=0;
+          break;
+        }
     }
     
  }
