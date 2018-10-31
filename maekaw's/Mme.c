@@ -1,4 +1,4 @@
-#define MAXPENDING 100
+#define MAXPENDING 10
 #define REQ 1
 #define VOTE 2
 #define REL 3
@@ -49,7 +49,7 @@ buffer sbuffer;
 int Yes_count;
 poll vote;
 int prime_site;
-int channelDelay[100];
+int channelDelay[10];
 pthread_mutex_t critical;
 pthread_mutex_t queue_head;
 pthread_mutex_t sbuffer_global;
@@ -57,6 +57,7 @@ unsigned int totalProcesses;
 unsigned int processId;
 unsigned int ports[10][10];
 sem_t mutex;
+int rel_flag=0;
 
 //-----------------------------
 
@@ -232,7 +233,7 @@ void Send_SES(buffer *rbuffer,int s,int p){
 
 void Intiate_critical()
  {
-
+   rel_flag=0;
   // Entry section----------------------
     printf("entry section-- REQ is sent with clock %d to all process in site %d\n",sbuffer.pclock+1,prime_site);
     Send_BCMsg(REQ);
@@ -248,7 +249,7 @@ void Intiate_critical()
 
      
   //Critical section------------------
-    // pthread_mutex_lock(&critical);
+     pthread_mutex_lock(&critical);
      
 
      printf("enter critical section\n");
@@ -258,8 +259,8 @@ void Intiate_critical()
         printf("exit critical section\n");
         printf("exiting critical section- msg sent  REL with clock %d to all process in site %d\n",sbuffer.pclock+1,prime_site);
         Send_BCMsg(REL);//Send relieve message to all processes
-        
-      // pthread_mutex_unlock(&critical) ;
+        rel_flag=1;  
+       pthread_mutex_unlock(&critical) ;
   //-----------------------------------
     }
 
@@ -328,15 +329,16 @@ void MHS(buffer *rbuffer)
 
     case INQUIRE:
         { printf("MHS - msg recieved INQUIRE with clock %d from  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[rbuffer->site][rbuffer->pid], rbuffer->site,rbuffer->pid);
-         // pthread_mutex_lock(&critical)  ;
-          if(Yes_count!=totalProcesses && Yes_count!=0) //rel and inquire simultaneously,use ses
+         pthread_mutex_lock(&critical)  ;
+          ]//rel and inquire simultaneously,use ses
+          if(!rel_flag)
           { Yes_count--;
             rbuffer->Msg=RELINQUISH;
             int s=rbuffer->site,p=rbuffer->pid;
           Send_SES(rbuffer,s,p);
           printf("MHS - msg RELINQUISH sent with clock %d to  (%d), site no: %d, proc no.:%d \n",rbuffer->pclock, ports[s][p],s,p);
           }
-         // pthread_mutex_unlock(&critical);
+         pthread_mutex_unlock(&critical);
           break;
         }
     case RELINQUISH:
@@ -413,7 +415,7 @@ int main(int argc, const char * argv[])
    pthread_t Receive;
 
    if(pthread_create(&Receive, NULL, Recv, NULL)){
-     Die_with_error("Failed To Create Thread To Receive Brodcast Messages");
+     Die_with_error("Failed To Create Thread To Receive  Messages");
        }
    int y;
    int src,dest;
