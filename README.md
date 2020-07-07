@@ -1,6 +1,6 @@
-# Simulation of Distributed Computing Algorithms
+# Simulation of Distributed Computing Algorithms and protocols
 
-All the DC algorithms present here are implemented in C using socket programming.
+All the DC algorithms and protocols present here are implemented in C using socket programming.
 
 
 # Requirements
